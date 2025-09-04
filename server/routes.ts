@@ -36,10 +36,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .map((m: any) => `Q: ${m.metadata?.question || 'Unknown'}\nA: ${m.metadata?.answer || 'No answer available'}`)
         .join("\n");
 
-      // 4. Generate response using GPT-5
-      // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
+      // 4. Generate response using GPT-4
       const completion = await client.chat.completions.create({
-        model: "gpt-5",
+        model: "gpt-4",
         messages: [
           { 
             role: "system", 
