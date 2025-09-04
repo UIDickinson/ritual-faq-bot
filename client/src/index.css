@@ -74,7 +74,8 @@
 }
 
 .messages-container {
-  height: calc(100vh - 180px);
+  min-height: 0;
+  max-height: cal(100vh - 220px);
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: var(--muted) transparent;
