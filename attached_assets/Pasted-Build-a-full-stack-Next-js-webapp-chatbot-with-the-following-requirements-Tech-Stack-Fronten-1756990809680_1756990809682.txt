@@ -1,0 +1,78 @@
+Build a full-stack Next.js webapp chatbot with the following requirements:
+
+🔹 Tech Stack:
+* Frontend: Next.js + React (chat UI)
+* Backend: Next.js API routes
+* Vector DB: Pinecone
+* LLM: OpenAI
+
+🔹 Functionality:
+1. User types a message in the chat input.
+2. Embed the message with `text-embedding-3-small`.
+3. Query Pinecone (top_k=5) with the embedding.
+4. Pass the user query + retrieved matches into `gpt-4o`.
+5. Return a **step-by-step synthesized answer** to the chat UI.
+
+🔹 UI Design:
+* Chat interface with input box + message bubbles.
+* Gradient background: green → black.
+* Top-right corner: icons linking to:
+   • Twitter: https://twitter.com/ritualnet
+   • Discord: https://discord.gg/HCGFMRGbkW
+   • FAQ: https://ritual.academy/ritual/faqs/
+
+
+Environment Variables:
+PINECONE_API_KEY=apikey
+PINECONE_INDEX_NAME=index_name
+OPENAI_API_KEY=api_key
+
+Deployment:
+Must be runnable on Vercel with API routes for Pinecone and OpenAI calls. And should run too locally using npm.
+
+The app/chat.js or route.ts backend file must be in the likeness of the code below:
+// Backend API route (queries Pinecone and OpenAI)
+
+import { getPineconeClient } from "../../utils/pinecone";
+import { getOpenAIClient } from "../../utils/openai";
+
+export default async function handler(req, res) {
+if (req.method !== "POST") return res.status(405).end();
+
+const { query } = req.body;
+const client = getOpenAIClient();
+const index = getPineconeClient();
+
+// 1. Embed query
+const embedding = await client.embeddings.create({
+model: "text-embedding-3-small",
+input: [query],
+});
+
+const queryVector = embedding.data[0].embedding;
+
+// 2. Search Pinecone
+const results = await index.query({
+vector: queryVector,
+topK: 5,
+includeMetadata: true,
+});
+
+const context = results.matches
+.map((m) => Q: ${m.metadata.question}\nA: ${m.metadata.answer})
+.join("\n");
+
+// 3. Generate LLM answer
+const completion = await client.chat.completions.create({
+model: "gpt-4o-mini",
+messages: [
+{ role: "system", content: "Answer based strictly on provided context." },
+{
+role: "user",
+content: User question: ${query}\n\nContext:\n${context}   \n\nWrite a concise, step-by-step solution.   Include exact commands/flags in fenced code blocks.   If multiple options exist, list them by likelihood.   If not enough evidence, say so.,
+},
+],
+});
+
+res.json({ answer: completion.choices[0].message.content });
+} 
